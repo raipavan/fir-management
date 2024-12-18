@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 
 function AssignRole() {
   const [address, setAddress] = useState("");
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState("User"); // Default role is "User"
   const [metaMaskAddress, setMetaMaskAddress] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
 
@@ -143,15 +143,18 @@ function AssignRole() {
             <label htmlFor="role" className="block text-gray-700 font-medium mb-2">
               Role
             </label>
-            <input
-              type="text"
+            <select
               id="role"
               value={role}
               onChange={(e) => setRole(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded"
-              placeholder="Enter role"
               required
-            />
+            >
+              <option value="User">User</option>
+              <option value="Investigator">Investigator</option>
+              <option value="Court">Court</option>
+              <option value="Police">Police</option>
+            </select>
           </div>
 
           <button
