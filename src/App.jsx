@@ -8,7 +8,7 @@ import AssignRole from './ui/pages/assign/Assign.jsx';
 import ViewAllFIRPolice from './ui/pages/view-all/View.jsx';
 import NewFIR from './ui/pages/new-fir/NewFir.jsx';
 import InvestigateFIR from './ui/pages/investigate/Investigate.jsx';
-import {CloseFIRPage} from './ui/pages/close-fir/CloseFIRPage.jsx';
+import CloseFIRPage from './ui/pages/close-fir/CloseFIRPage.jsx';
 import ViewAllFIRsPage from './ui/pages/ViewAllFIR/ViewAllFIRsPage.jsx';
 function App() {
   return (

@@ -1,146 +1,162 @@
-import React, { useState, useEffect } from "react";
-import Web3 from "web3";
-// import { ethers } from "ethers";  // Using ethers.js for interaction
+import React, { useState } from "react";
+// Import the reusable component
+import AccountSwitcher from "../../components/AccountSwitcher";
 
-export const CloseFIRPage =()=> {
+function InvestigateFIR() {
   const [metaMaskAddress, setMetaMaskAddress] = useState(null);
-  const [firId, setFirId] = useState("");
-  const [message, setMessage] = useState("");
-  const [statusMessage, setStatusMessage] = useState("");
-  const [contract, setContract] = useState(null);
+  const [firs, setFirs] = useState([]); // List of FIRs
+  const [statusMessage, setStatusMessage] = useState(""); // Global status message
+  const [investigationMessages, setInvestigationMessages] = useState({}); // Separate messages for each FIR
 
-  // Contract ABI and address (Update these with your actual values)
-//   const contractABI = [
-//     {
-//       "inputs": [
-//         { "internalType": "uint256", "name": "_firId", "type": "uint256" },
-//         { "internalType": "string", "name": "_message", "type": "string" }
-//       ],
-//       "name": "closeFIR",
-//       "outputs": [],
-//       "stateMutability": "nonpayable",
-//       "type": "function"
-//     },
-//   ];
-//   const contractAddress = "YOUR_CONTRACT_ADDRESS";  // Replace with your contract address
+  // Function to fetch FIRs
+  const fetchFIRs = async (address) => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/view-all-fir-court?from=${address}`
+      );
+      const data = await response.json();
 
-//   useEffect(() => {
-//     if (window.ethereum) {
-//       const web3 = new Web3(window.ethereum);
-//       const provider = new ethers.providers.Web3Provider(window.ethereum);
-//       const signer = provider.getSigner();
-//       const contractInstance = new ethers.Contract(contractAddress, contractABI, signer);
-//       setContract(contractInstance);
-//     }
-//   }, []);
+      if (response.ok) {
+        setFirs(data); // Set the FIRs data
+        console.log(data)
+      } else {
+        setStatusMessage(data.message || "Error fetching FIRs.");
+      }
+    } catch (error) {
+      console.error("API call failed:", error);
+      setStatusMessage("Failed to fetch FIRs.");
+    }
+  };
 
-//   // Function to connect MetaMask
-//   const connectMetaMask = async () => {
-//     if (!window.ethereum) {
-//       alert("MetaMask is not installed. Please install it to proceed.");
-//       return;
-//     }
-//     try {
-//       const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-//       setMetaMaskAddress(accounts[0]); // Set the connected MetaMask address
-//     } catch (error) {
-//       console.error("MetaMask connection failed:", error);
-//       setStatusMessage("MetaMask connection failed.");
-//     }
-//   };
+  // Function to mark an FIR as Investigated
+  const handleInvestigateFIR = async (fir_id) => {
+    if (!metaMaskAddress) {
+      alert("Please connect MetaMask before investigating an FIR.");
+      return;
+    }
 
-//   // Function to handle FIR closure
-//   const handleCloseFIR = async (e) => {
-//     e.preventDefault();
+    const message = investigationMessages[fir_id]?.trim();
+    if (!message) {
+      alert("Please provide a message for the investigation.");
+      return;
+    }
 
-//     if (!metaMaskAddress) {
-//       alert("Please connect MetaMask before closing an FIR.");
-//       return;
-//     }
+    try {
+      const response = await fetch("http://localhost:3000/close-fir", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fir_id,
+          message,
+          sender_address: metaMaskAddress,
+        }),
+      });
 
-//     if (!firId || !message) {
-//       alert("Please fill in all fields.");
-//       return;
-//     }
+      const result = await response.json();
 
-//     try {
-//       const tx = await contract.closeFIR(firId, message);
-//       setStatusMessage("FIR Closed successfully!");
-//       await tx.wait(); // Wait for transaction to be mined
-//       console.log("Transaction successful:", tx);
-//     } catch (error) {
-//       console.error("Error closing FIR:", error);
-//       setStatusMessage("Failed to close FIR.");
-//     }
-//   };
+      if (response.ok) {
+        setStatusMessage(`FIR ${fir_id} closed successfully!`);
+        setInvestigationMessages((prev) => ({
+          ...prev,
+          [fir_id]: "",
+        })); // Clear the message field for this FIR
+        fetchFIRs(metaMaskAddress); // Re-fetch FIRs after investigation
+      } else {
+        setStatusMessage(result.message || `Error closing FIR ${fir_id}.`);
+      }
+    } catch (error) {
+      console.error("API call failed:", error);
+      setStatusMessage(`Failed to close FIR ${fir_id}.`);
+    }
+  };
+
+  // Handle investigation message change for a specific FIR
+  const handleInvestigationMessageChange = (fir_id, value) => {
+    setInvestigationMessages((prev) => ({
+      ...prev,
+      [fir_id]: value,
+    }));
+  };
+
+  // Fetch FIRs when MetaMask account changes
+  const handleAccountChange = (address) => {
+    setMetaMaskAddress(address);
+    fetchFIRs(address);
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="bg-white shadow-md rounded px-8 py-6 max-w-md w-full">
+    <div className="min-h-screen flex flex-col items-center bg-gray-100 p-4">
+      <div className="bg-white shadow-md rounded px-8 py-6 max-w-2xl w-full">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Close FIR</h1>
 
-        {/* MetaMask Address */}
-        <div className="mb-4">
-          {metaMaskAddress ? (
-            <p className="text-green-600 font-semibold">
-              Connected with: {metaMaskAddress}
-            </p>
-          ) : (
-            <button
-              onClick={connectMetaMask}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              Connect MetaMask
-            </button>
-          )}
-        </div>
-
-        {/* FIR ID Input */}
-        <div className="mb-4">
-          <label htmlFor="firId" className="block text-gray-700 font-medium mb-2">
-            FIR ID
-          </label>
-          <input
-            type="number"
-            id="firId"
-            value={firId}
-            onChange={(e) => setFirId(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded"
-            placeholder="Enter FIR ID"
-            required
-          />
-        </div>
-
-        {/* Investigator's Message Input */}
-        <div className="mb-4">
-          <label htmlFor="message" className="block text-gray-700 font-medium mb-2">
-            Investigator's Message
-          </label>
-          <textarea
-            id="message"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded"
-            placeholder="Enter Investigator's Message"
-            required
-          />
-        </div>
-
-        {/* Close FIR Button */}
-        <button
-          onClick={handleCloseFIR}
-          className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-        >
-          Close FIR
-        </button>
+        {/* AccountSwitcher Component */}
+        <AccountSwitcher onAccountChange={handleAccountChange} />
 
         {/* Status Message */}
         {statusMessage && (
-          <p className="mt-4 text-center text-gray-600 font-semibold">{statusMessage}</p>
+          <p className="text-center text-red-600 font-semibold mb-4">
+            {statusMessage}
+          </p>
+        )}
+
+        {/* FIR List */}
+        {firs.length > 0 ? (
+          <div className="space-y-4">
+            {firs.map((fir, index) => (
+              <div
+                key={index}
+                className="border border-gray-300 rounded p-4 bg-gray-50"
+              >
+                <p>
+                  <span className="font-bold text-gray-700">FIR ID:</span>{" "}
+                  {fir["0"]}
+                </p>
+                <p>
+                  <span className="font-bold text-gray-700">From:</span>{" "}
+                  {fir["1"]}
+                </p>
+                <p>
+                  <span className="font-bold text-gray-700">Message:</span>{" "}
+                  {fir["2"]}
+                </p>
+                <p>
+                  <span className="font-bold text-gray-700">Investigated message:</span>{" "}
+                  {fir["investigationDetails"]}
+                </p>
+
+                {/* Investigator's Message for each FIR */}
+                <div className="mt-4">
+                  <textarea
+                    placeholder="Enter investigation message"
+                    value={investigationMessages[fir["0"]] || ""}
+                    onChange={(e) =>
+                      handleInvestigationMessageChange(fir["0"], e.target.value)
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded"
+                    rows="3"
+                  />
+                </div>
+
+                {/* Investigate Button for Police */}
+                <div className="mt-4">
+                  <button
+                    onClick={() => handleInvestigateFIR(fir["0"])}
+                    className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+                  >
+                    Close FIR
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-gray-600">No FIRs found.</p>
         )}
       </div>
     </div>
   );
 }
 
-export default CloseFIRPage;
+export default InvestigateFIR;

@@ -12,7 +12,7 @@ function InvestigateFIR() {
   const fetchFIRs = async (address) => {
     try {
       const response = await fetch(
-        `http://localhost:3000/view-all-fir?from=${address}`
+        `http://localhost:3000/view-all-fir-investigate?from=${address}`
       );
       const data = await response.json();
 
